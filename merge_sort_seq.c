@@ -1,55 +1,70 @@
-#include <iostream>
-#include <fstream>
-#include <vector>
-#include <algorithm>
-#include <chrono>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
-const int SMALL_SIZE_THRESHOLD = 1000;
+void merge(int arr[], int l, int m, int r) {
+    int i, j, k;
+    int n1 = m - l + 1;
+    int n2 = r - m;
 
-void merge(std::vector<int>& arr, int left, int mid, int right) {
-    std::vector<int> temp(right - left + 1);
-    int i = left, j = mid + 1, k = 0;
-    
-    while (i <= mid && j <= right) {
-        temp[k++] = arr[i] <= arr[j] ? arr[i++] : arr[j++];
+    int L[n1], R[n2];
+
+    for (i = 0; i < n1; i++)
+        L[i] = arr[l + i];
+    for (j = 0; j < n2; j++)
+        R[j] = arr[m + 1 + j];
+
+    i = 0; j = 0; k = l;
+    while (i < n1 && j < n2) {
+        if (L[i] <= R[j]) {
+            arr[k] = L[i];
+            i++;
+        } else {
+            arr[k] = R[j];
+            j++;
+        }
+        k++;
     }
-    while (i <= mid) temp[k++] = arr[i++];
-    while (j <= right) temp[k++] = arr[j++];
-    std::copy(temp.begin(), temp.end(), arr.begin() + left);
+
+    while (i < n1) arr[k++] = L[i++];
+    while (j < n2) arr[k++] = R[j++];
 }
 
-void sequentialMergeSort(std::vector<int>& arr, int left, int right) {
-    if (left < right) {
-        if (right - left <= SMALL_SIZE_THRESHOLD) {
-            std::sort(arr.begin() + left, arr.begin() + right + 1);
-            return;
-        }
-        int mid = left + (right - left) / 2;
-        sequentialMergeSort(arr, left, mid);
-        sequentialMergeSort(arr, mid + 1, right);
-        merge(arr, left, mid, right);
+void mergeSort(int arr[], int l, int r) {
+    if (l < r) {
+        int m = l + (r - l) / 2;
+        mergeSort(arr, l, m);
+        mergeSort(arr, m + 1, r);
+        merge(arr, l, m, r);
     }
 }
 
 int main() {
-    std::ifstream file("random_100000.txt");
+    FILE *file = fopen("random_100000.txt", "r");
     if (!file) {
-        std::cerr << "Error opening file." << std::endl;
+        printf("Error opening file.\n");
         return 1;
     }
 
-    std::vector<int> arr;
-    int value;
-    while (file >> value) {
-        arr.push_back(value);
+    int count = 0, num;
+    while (fscanf(file, "%d", &num) == 1) count++;
+    
+    rewind(file);
+    int *arr = malloc(count * sizeof(int));
+    for (int i = 0; i < count; i++) {
+        fscanf(file, "%d", &arr[i]);
     }
+    fclose(file);
 
-    auto start = std::chrono::high_resolution_clock::now();
-    sequentialMergeSort(arr, 0, arr.size() - 1);
-    auto end = std::chrono::high_resolution_clock::now();
+    // Replace the timing section with:
+clock_t start = clock();
+for (int i = 0; i < 10; i++) {  // Run 10 times for better measurement
+    mergeSort(arr, 0, count - 1);
+}
+clock_t end = clock();
+double elapsed = ((double)(end - start)) / (CLOCKS_PER_SEC * 10);
+printf("Average Sequential Sort Time (10 runs): %.6f seconds\n", elapsed);
 
-    std::chrono::duration<double> elapsed = end - start;
-    std::cout << "Sequential Sort Time: " << elapsed.count() << " seconds" << std::endl;
-
+    free(arr);
     return 0;
 }
